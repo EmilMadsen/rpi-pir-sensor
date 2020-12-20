@@ -3,7 +3,6 @@ package dk.emad.pirsensor.service;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
@@ -12,7 +11,8 @@ import java.time.Instant;
 @Service
 public class TradfriService {
     private static final Logger log = LoggerFactory.getLogger(TradfriService.class);
-    private static final Integer INACTIVITY_DELAY_MINUTES = 30;
+    private static final Integer INACTIVITY_TIMEOUT_MINUTES = 15;
+    private static final Integer REQUEST_TIMEOUT_SECONDS = 30;
 
     private final RestTemplate restTemplate;
 
@@ -26,29 +26,28 @@ public class TradfriService {
     }
 
     public void turnOn() {
-        // ignore request if has been sent within last 30 seconds.
-        Instant cooldown = Instant.now().minusSeconds(30);
+        // ignore request if has been sent within timeout window.
+        Instant cooldown = Instant.now().minusSeconds(REQUEST_TIMEOUT_SECONDS);
         if (lastRequest == null || lastRequest.isBefore(cooldown)) {
             String url = ikeahomeApi + "/api/name/" + ikeahomeRoom + "/on/true/brightness/255";
             String response = restTemplate.getForObject(url, String.class);
-            turnOffAt = Instant.now().plusSeconds(60 * INACTIVITY_DELAY_MINUTES);
+            turnOffAt = Instant.now().plusSeconds(60 * INACTIVITY_TIMEOUT_MINUTES);
             lastRequest = Instant.now();
-            log.info(response);
+            log.debug(response);
         } else {
-            log.info("lastRequest was sent within 30 seconds: {}", lastRequest.toString());
+            log.info("lastRequest was sent within {} seconds: {}", REQUEST_TIMEOUT_SECONDS, lastRequest.toString());
         }
     }
 
-    @Scheduled(fixedRate = 1000*60)
     public void turnOffInactiveLights() {
         log.info("turning off inactive lights");
         if (turnOffAt != null) {
             Instant now = Instant.now();
-            if(now.isBefore(turnOffAt)) {
+            if(now.isAfter(turnOffAt)) {
                 String url = ikeahomeApi + "/api/name/" + ikeahomeRoom + "/on/false/brightness/0";
                 String response = restTemplate.getForObject(url, String.class);
                 turnOffAt = null;
-                log.info(response);
+                log.debug(response);
             } else {
                 log.info("turnOffAt is not yet - now: {} - turnOffAt: {}", now.toString(), turnOffAt.toString());
             }
