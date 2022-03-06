@@ -7,7 +7,7 @@ build image for pi:
 push to dockerhub   
 ```docker push emilmadsen/rpi-pir-sensor```   
 run on pi:  
-```docker run --restart always --device /dev/gpiomem:/dev/gpiomem emilmadsen/rpi-pir-sensor```
+```docker run --restart always --privileged emilmadsen/rpi-pir-sensor```
 
 
 ### ouroboros (watch+redeploy changes)
