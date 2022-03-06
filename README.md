@@ -1,6 +1,5 @@
 # rpi-pir-sensor
 Spring Boot service using pi4j library to watch input on GPIO pin on raspberry pi.   
-TODO: Calls rpi-ikea-home on movement.
 
 ### docker pi
 build image for pi:  
